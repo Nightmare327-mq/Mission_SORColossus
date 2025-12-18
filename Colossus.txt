@@ -1,0 +1,28 @@
+Mission Giver: Black Jay in Shattered Arcstone
+requestzone: arcstoneruins
+request word: smaller
+zone in word: ready
+
+mission zone: arcstoneruins_mission
+Mission starter: Torm the golden
+start word: now
+Main Named: 
+
+I ignored the runes, just killed the adds to start
+
+Add Names:  
+
+Aura Name: /nav spawn Runic Runaway
+Aura Name: /nav spawn Stony Storm
+Main Named: /nav spawn The Colossus of Skylance
+a stony worker
+a runic worker
+
+Need to handle teh stone drops
+Need to go to colossus before he appears on the xtarhater list
+
+Orignal Colossus location: -813 1840 1779
+Stone Spot 1:
+Stone Spot 2:
+Stone Spot 3:
+Stone Spot 4:
