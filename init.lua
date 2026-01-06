@@ -1,4 +1,4 @@
--- Mission_TOBHazuri
+-- Mission_SORColossus
 -- Version 1.2
 -- TODO: Implement bc support if asked for
 -- TODO: Implement RGMercs.lua support if asked for (it has been)
@@ -120,29 +120,6 @@ while Settings.general.PreManaCheck == true and Ready == false do
     TaskCheck(Task_Name)
 end
 
--- in case you are starting the script after you are in the mission zone - need to determine what area you are close to
--- if (mq.TLO.Me.X() < 270 and mq.TLO.Me.Y() > -190) then
---     Logger.debug('Top section by zone in: X:%s Y:%s', mq.TLO.Me.X(), mq.TLO.Me.Y())
---     Logger.info('Doing some setup. Invising and moving to camp spot.')
-
---     GroupInvis(1)
-
---     mq.delay(2000)
-
---     -- Nav in 2 steps to avoid mobs if at all possible
---     mq.cmd('/squelch /dgga /nav locyx -50 152 log=off')
---     WaitForNav()
-
---     mq.cmd('/squelch /dgga /nav locyx -286 -282 log=off')
---     WaitForNav()
--- end
--- if math.abs(mq.TLO.Me.Y() + 286) > 15 or math.abs(mq.TLO.Me.X() + 282) > 15 then
---     -- We are not near the camp spot, so lets move there
---     Logger.info('Moving to camp spot...')
---     mq.cmd('/squelch /dgga /nav locyx -286 -282 log=off')
---     WaitForNav()
--- end
-
 Logger.info('Doing some setup...')
 
 DoPrep()
@@ -163,11 +140,11 @@ MoveToAndSay('Torm the Golden', 'now')
 
 -- This section was waiting till all the starting adds were killed to do the rest of the script
 Logger.info('Killing the 2 initial mobs...')
-while mq.TLO.SpawnCount("Colossus xtarhater")() < 1 do
+while mq.TLO.SpawnCount("a stony worker npc")() + mq.TLO.SpawnCount("a runic worker npc")()  > 0 do
     if (mq.TLO.SpawnCount('a stony worker npc')() > 0) then
         Logger.debug('stony worker Attack branch...')
         MoveToTargetAndAttack('a stony worker')
-    elseif (mq.TLO.SpawnCount('a stony worker npc')() > 0) then
+    elseif (mq.TLO.SpawnCount('a runic worker npc')() > 0) then
         Logger.debug('runic worker Attack branch...')
         MoveToTargetAndAttack('a runic worker')
     end
@@ -204,6 +181,15 @@ mq.event('Zoned','LOADING, PLEASE WAIT...#*#',event_zoned)
 mq.event('Failed','#*#summons overwhelming enemies and your mission fails.#*#',event_failed)
 mq.event('StoneFall', '#*#The Colossus tosses a large stone into the air and it hovers heavily#*#', event_stonefall)
 
+-- Setting burn mode for the big named
+if (Settings.general.Burn == true) then 
+    Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
+    Logger.debug('Setting BurnAlways on')
+    if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnalways on nosave') end
+end
+
+local modeSet = false
+
 while true do
 	mq.doevents()
 
@@ -216,13 +202,19 @@ while true do
 		break
 	end
 
-    if (mq.TLO.SpawnCount('Colossus npc')() > 0 ) then 
-        -- if (section ~= 1) then 
-        --     section = 1
-        --     Logger.info('Killing Colossus...')
-        -- end
+    if (mq.TLO.SpawnCount('Colossus npc xtarhater')() > 0 ) then 
         Logger.debug('Colossus Attack branch...')
         MoveToTargetAndAttack('Colossus')
+        if modeSet ~= true then 
+            if (Settings.general.Burn == true) then 
+                Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
+                Logger.debug('Setting BurnAlways on')
+                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnalways on nosave') end
+                mq.cmd('/boxr burnnow')
+            end
+            
+            modeSet = true
+        end
 	end
 
     if mq.TLO.Target() ~= nil then 

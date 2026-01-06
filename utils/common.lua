@@ -645,14 +645,17 @@ DoPrep = function()
         mq.cmdf('/%s checkprioritytarget off nosave', my_class)
         mq.cmdf('/%s resetcamp', my_class)
         if (Settings.general.Burn == true) then 
-            Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
-            Logger.debug('Setting BurnAlways on')
-            mq.cmd('/cwtna burnalways on nosave') 
+            -- Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
+            -- Logger.debug('Setting BurnAlways on')
+            -- mq.cmd('/cwtna burnalways on nosave') 
+            -- Added here to turn off burns for the 2 starting mobs
+            mq.cmd('/cwtna burnalways off nosave') 
         else 
             Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
             Logger.debug('Setting BurnAlways off')
             mq.cmd('/cwtna burnalways off nosave') 
         end
+
     end
     mq.cmd('/dgga /makemevis')
 end
@@ -663,6 +666,8 @@ ClearStartingSetup = function()
         mq.cmdf('/%s mode %s nosave', my_class, cwtn_StartingMode)
         mq.cmdf('/%s pause off', my_class)
         mq.cmdf('/%s checkprioritytarget on nosave', my_class)
+        -- resettign this to make sure it is now off on the toon - not able to know if it was off or on before - maybe base it on the tank toon's setting
+        mq.cmd('/cwtna burnalways off nosave')
     end
 end
 
