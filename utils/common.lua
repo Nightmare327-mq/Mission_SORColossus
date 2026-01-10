@@ -1,16 +1,82 @@
 local mq = require('mq')
+
+-- #region local Variables
 local config_path = ''
 local my_class = mq.TLO.Me.Class.ShortName()
 local my_name = mq.TLO.Me.CleanName()
-local cwtn_StartingMode = mq.TLO.CWTN.Mode()
+local cwtn_StartingMode = ''
 
 local task = mq.TLO.Task(Task_Name)
 
+-- Lookup table: Class ShortName -> CWTN Plugin Name
+local classPluginLookup = {
+    BER = 'MQ2BerZerker',
+    BRD = 'MQ2Bard',
+    BST = 'Mq2Bst',
+    CLR = 'Mq2Cleric',
+    DRU = 'Mq2Druid',
+    ENC = 'MQ2Enchanter',
+    MAG = 'MQ2Mage',
+    MNK = 'MQ2Monk',
+    NEC = 'MQ2Necro',
+    PAL = 'Mq2Paladin',
+    RNG = 'MQ2Ranger',
+    ROG = 'MQ2Rogue',
+    SHD = 'MQ2Eskay',
+    SHM = 'MQ2Shaman',
+    WAR = 'MQ2War',
+    WIZ = 'MQ2Wizard',
+}
+
+-- #endregion
+
+
+-- #region local functions
 local function file_exists(name)
 	local f = io.open(name, "r")
 	if f ~= nil then io.close(f) return true else return false end
 end
 
+
+--- Reload CWTN plugins for all non-mercenary group members
+--- Skips mercenaries automatically
+local function ReloadGroupCWTNPlugins()
+    local groupSize = mq.TLO.Me.GroupSize() or 0
+
+    -- 0 = self, 1..GroupSize = other members
+    for i = 0, groupSize do
+        local member = mq.TLO.Group.Member(i)
+
+        if member() and member.Present() then
+            -- Skip mercenaries
+            if member.Mercenary() then
+                Logger.info('Skipping mercenary in group slot %s', i)
+            else
+                local name = member.Name()
+                local classShort = member.Class.ShortName()
+                local pluginName = classPluginLookup[classShort]
+
+                if pluginName then
+                    if name == mq.TLO.Me.Name() then 
+                        mq.cmdf('/timed 50 /plugin %s unload', pluginName) 
+                        mq.cmdf('/timed 100 /plugin %s load', pluginName) 
+                        Logger.info('Local Plugin reset on %s (%s) %s', name, classShort, pluginName)
+                    else
+                        mq.cmdf('/dex %s /plugin %s unload', name, pluginName)
+                        mq.cmdf('/dex %s /timed 10 /plugin %s', name, pluginName)
+                        Logger.info('Remote Plugin reset on %s (%s) %s', name, classShort, pluginName)
+                    end
+                    
+                else
+                    Logger.info('No plugin mapping for %s (%s)', name, classShort)
+                end
+            end
+        end
+    end
+end
+ -- #endregion
+
+ -- #region Global functions 
 Load_settings=function ()
     local config_dir = mq.configDir:gsub('\\', '/') .. '/'
     local config_file = string.format('mission_sorcolossus_%s.ini', mq.TLO.Me.CleanName())
@@ -51,10 +117,24 @@ Load_settings=function ()
     end
  end
 
+
+ Get_dist_to = function(target_y, target_x, target_z)
+    -- Use mq.TLO.Math.Distance to get the distance to a specific point
+    -- The format for the TLO is "X Y Z"
+    local dist_str = mq.TLO.Math.Distance(string.format("%f,%f,%f", target_y, target_x, target_z))()
+  
+    -- -- mq.TLO returns a string, so convert it to a number (float)
+    local distance = tonumber(dist_str)
+    
+    return distance
+end
+
  WaitForNav = function()
+    local loopcount = 0
 	Logger.debug('Starting WaitForNav()...')
-	while mq.TLO.Navigation.Active() == false do
+	while mq.TLO.Navigation.Active() == false and loopcount < 10 do
 		mq.delay(10)
+        loopcount = loopcount + 1
 	end
 	while mq.TLO.Navigation.Active() == true do
 		mq.delay(10)
@@ -63,23 +143,9 @@ Load_settings=function ()
 	Logger.debug('Exiting WaitForNav()...')
 end
 
--- Refactored by hytiek
--- MoveToSpawn = function(spawn, distance)
---     if (distance == nil) then distance = 15 end
-
---     if (spawn == nil or spawn.ID() == nil) then return false end
---     if (spawn.Distance() < distance) then return true end
-
---     mq.cmdf('/squelch /nav id %d npc |dist=%s log=off', spawn.ID(), distance)
---     mq.delay(10)
---     while mq.TLO.Nav.Active() do mq.delay(10) end
---     mq.delay(500)
---     return true
--- end
-
 MoveToSpawn = function(spawn, distance)
     -- Logger.debug('spawn = '..spawn())
-    -- Logger.debug('spawn.ID = '..spawn.ID())z
+    -- Logger.debug('spawn.ID = '..spawn.ID())
     if (spawn ~= nil and spawn.ID() ~= nil) then
         if (distance == nil or type(distance) ~= "number") then
             distance = 15
@@ -115,17 +181,6 @@ MoveTo = function(spawn_name, distance)
     return MoveToSpawn(spawn, distance)
 end
 
--- Old code.  Refactored by hytiek
--- MoveToAndTarget = function(spawn)
---     if MoveTo(spawn) == false then return false end
---     while mq.TLO.Target.CleanName() ~= mq.TLO.Spawn(spawn).CleanName() do 
---         mq.cmdf('/eqtarget %s npc', spawn) 
---         mq.delay(10)
---     end
---     mq.delay(250)
---     return true
--- end
-
 MoveToAndTarget = function(spawn_name)
     -- Logger.debug('spawn = '..spawn_name)
     if spawn_name ~= nil then
@@ -150,20 +205,6 @@ MoveToAndAct = function(spawn_name, cmd)
     mq.cmd(cmd)
     return true
 end
-
--- Old Code - refactored by hytiek
--- MoveToAndAttack = function(spawn)
---     if MoveTo(spawn) == false then return false end
---     while mq.TLO.Target.CleanName() ~= mq.TLO.Spawn(spawn).CleanName() do 
---         mq.cmdf('/eqtarget %s npc', spawn) 
---         mq.delay(10)
---     end
---     mq.delay(250)
---     if mq.TLO.Target.CleanName() == mq.TLO.Spawn(spawn).CleanName() and mq.TLO.Me.Combat() == false then 
---         mq.cmd('/attack on') 
---     end
---     return true
--- end
 
 MoveToTargetAndAttack = function(spawn_name)
     if MoveToAndTarget(spawn_name) == true then
@@ -265,7 +306,7 @@ The_Invis_Thing = function(mode)
                 else
                     mq.cmdf('/dex %s /multiline ; /stopsong; /timed 1 /alt act 3704; /timed 3 /alt act 231', bard)
             end
-            Logger.info('\ag-->\atINVer: \ay',bard, '\at IVUer: \ay', bard,'\ag<--')
+            Logger.info('\ag-->\at INVer: \ay %s \at IVUer: \ay %s \ag<--', bard, bard)
     else
     --without a bard, find who can invis and who can IVU
         local inver = 0
@@ -326,10 +367,10 @@ The_Invis_Thing = function(mode)
         end
 
         if (inver >= 0 and mode ~= 2) then 
-            Logger.info('\ag-->\atINVer: \ay%s<--', mq.TLO.Group.Member(inver).Name())
+            Logger.info('\ag-->\atINVer: \ay %s<--', mq.TLO.Group.Member(inver).Name())
         end
         if (ivuer >= 0 and mode >= 2) then 
-            Logger.info('\ag-->\atIVUer: \ay%s<--', mq.TLO.Group.Member(ivuer).Name())
+            Logger.info('\ag-->\atIVUer: \ay %s<--', mq.TLO.Group.Member(ivuer).Name())
         end
         
         -- Logger.info('\ag-->\atINVer: \ay%s\at IVUer: \ay%s\ag<--', mq.TLO.Group.Member(inver).Name(), mq.TLO.Group.Member(ivuer).Name())
@@ -440,9 +481,15 @@ StopAttack = function()
     Logger.debug('my_class = '..my_class)
     Logger.debug('my_name = '..my_name)
 	mq.cmd('/attack off') 
-	mq.cmd('/cwtna CheckPriorityTarget off nosave')
-	mq.cmdf('/%s CheckPriorityTarget off nosave', my_class )
-	mq.cmdf('/%s  manual nosave', my_class )
+    if Settings.general.Automation == 'CWTN' then 
+       	mq.cmd('/cwtna CheckPriorityTarget off nosave')
+        mq.cmdf('/%s CheckPriorityTarget off nosave', my_class )
+        mq.cmdf('/%s manual nosave', my_class )
+    elseif Settings.general.Automation == 'rgmercs' then 
+        --TODO: Finish automation entries
+    elseif Settings.general.Automation == 'KA' then 
+        --TODO: Finish automation entries
+    end
 	Logger.debug('StopAttack branch...')
 	if mq.TLO.Target.CleanName() ~= my_name then mq.cmdf('/eqtarget %s', my_name) end
 end
@@ -451,14 +498,16 @@ ZoneIn = function(npcName, zoneInPhrase, quest_zone)
     if Settings.general.Automation == 'CWTN' then 
         Logger.info('Pausing CWTN modules so we can zone in')
         mq.cmd('/cwtna pause on nosave')
-        mq.delay(250)
+        mq.delay(1000)
     end
+    -- Adding sections to handle other automation - these should work for rgmercs and KA
+    -- mq.cmd('/dgga /squelch /boxr pause')
     local GroupSize = mq.TLO.Group.Members()
 
     for g = 1, GroupSize, 1 do
         local memberName = mq.TLO.Group.Member(g).Name()
-        if mq.TLO.Group.Member(g).Mercenary() ~= true then 
-            Logger.info('\ay-->%s<--\apShould Be Zoning In Now', memberName)
+        if mq.TLO.Group.Member(g).Mercenary() ~= true then         
+            Logger.info('\ay-->%s<--\ap Should Be Zoning In Now', memberName)
             mq.cmdf('/dex %s /eqtarget %s', memberName, npcName)
             mq.delay(math.random(2000, 4000))
             mq.cmdf('/dex %s /say %s', memberName, zoneInPhrase)
@@ -479,15 +528,17 @@ ZoneIn = function(npcName, zoneInPhrase, quest_zone)
     if mq.TLO.Target.CleanName() ~= npcName then
         mq.cmdf('/eqtarget %s', npcName)
         mq.delay(5000)
+        Logger.info('\ay-->%s<--\ap Should Be Zoning In Now', mq.TLO.Me.CleanName())
         mq.cmdf('/say %s', zoneInPhrase)
     else
         mq.delay(5000)
+        Logger.info('\ay-->%s<--\ap Should Be Zoning In Now', mq.TLO.Me.CleanName())
         mq.cmdf('/say %s', zoneInPhrase)
     end
     local counter = 0
     while mq.TLO.Zone.ShortName() ~= quest_zone do 
         counter = counter + 1
-        if counter >= 10 then 
+        if counter >= 12 then 
             Logger.info('Not able to zone into the %s. Look at the issue and fix it please.', quest_zone)
             os.exit()
         end
@@ -498,8 +549,10 @@ ZoneIn = function(npcName, zoneInPhrase, quest_zone)
         if Settings.general.Automation == 'CWTN' then 
             Logger.info('Un-Pausing CWTN modules after we have zoned in')
             mq.cmd('/cwtna pause off nosave')
-            mq.delay(250)
+            mq.delay(1000)
         end
+        mq.cmd('/dgga /squelch /boxr Unpause')
+        mq.delay(1000)
     end
 end
 
@@ -513,7 +566,12 @@ Task = function(task_name, request_zone, request_npc, request_phrase)
             Logger.info('Not In %s to request task.  Move group to that zone and restart.', request_zone)
             os.exit()
         end
-
+        if Settings.general.Automation == 'CWTN' then 
+            mq.cmd('/cwtna pause on nosave')
+        else
+            mq.cmd('/dgga /boxr pause')
+        end
+        
         MoveToAndSay(request_npc, request_phrase)
 
         for index=1, 5 do
@@ -535,8 +593,9 @@ Task = function(task_name, request_zone, request_npc, request_phrase)
             os.exit()
         end
 
-        Logger.info('\at Got quest.')
+        Logger.info('\at Got quest... Closing Quest window in a few seconds...')
         mq.cmd('/dgga /squelch /timed 50 /windowstate TaskWnd close')
+        mq.delay(100)
     end
 
     if (task() == nil) then
@@ -635,27 +694,35 @@ ZoneCheck = function(quest_zone)
 end
 
 DoPrep = function()
+    mq.cmd('/dgga /makemevis')
     if Settings.general.Automation == 'CWTN' then 
         cwtn_StartingMode = mq.TLO.CWTN.Mode()
         Logger.debug('CWTN Starting Mode: %s', cwtn_StartingMode)
+        mq.cmd('/cwtn mode manual nosave')
+        mq.delay(100)
         mq.cmd('/cwtn mode chase nosave')
         mq.cmdf('/%s mode sictank nosave', my_class)
+        -- these next 2 lines are probably superfluous, but it makes me feel better
         mq.cmdf('/%s pause off', my_class)
         mq.cmd('/cwtna pause off')
         mq.cmdf('/%s checkprioritytarget off nosave', my_class)
         mq.cmdf('/%s resetcamp', my_class)
-        if (Settings.general.Burn == true) then 
-            -- Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
-            -- Logger.debug('Setting BurnAlways on')
-            -- mq.cmd('/cwtna burnalways on nosave') 
-            -- Added here to turn off burns for the 2 starting mobs
-            mq.cmd('/cwtna burnalways off nosave') 
-        else 
-            Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
-            Logger.debug('Setting BurnAlways off')
-            mq.cmd('/cwtna burnalways off nosave') 
-        end
-
+        mq.cmdf('/cwtna AutoAssistAt 99')
+        
+        Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
+        Logger.debug('Setting BurnAlways off for main named')
+        mq.cmd('/cwtna burnalways off nosave')         
+    elseif Settings.general.Automation == 'rgmercs' then 
+        --TODO: Finish Automation Setup
+        mq.cmd('/dge /squelch /boxr Chase')
+    elseif Settings.general.Automation == 'KA' then 
+        --TODO: Finish Automation Setup
+        mq.cmd('/dge /squelch /boxr Chase')
+        mq.cmd('/dgga /boxr unpause')
+    else
+        print('Unknown Automation method!  I am not sure how you got this far with this entry, but we need to stop the script now!')
+        printf('Current Automation method in the ini: %s', Settings.general.Automation)
+        os.exit()
     end
     mq.cmd('/dgga /makemevis')
 end
@@ -666,9 +733,25 @@ ClearStartingSetup = function()
         mq.cmdf('/%s mode %s nosave', my_class, cwtn_StartingMode)
         mq.cmdf('/%s pause off', my_class)
         mq.cmdf('/%s checkprioritytarget on nosave', my_class)
-        -- resettign this to make sure it is now off on the toon - not able to know if it was off or on before - maybe base it on the tank toon's setting
-        mq.cmd('/cwtna burnalways off nosave')
+        mq.cmd('/cwtna pause off')
+
+        Logger.info('Resetting all group CWTN plugins to reset all settings to base...Waiting 5 seconds')
+        mq.delay(5000)
+        ReloadGroupCWTNPlugins()
+    elseif Settings.general.Automation == 'rgmercs' then 
+        --TODO: Finish Automation Setup
+    elseif Settings.general.Automation == 'KA' then 
+        --TODO: Finish Automation Setup
+    else
+        print('Unknown Automation method!  I am not sure how you got this far with this entry, but we need to stop the script now!')
+        printf('Current Automation method in the ini: %s', Settings.general.Automation)
+        os.exit()        
     end
+    mq.delay(5000)
+    -- mq.cmd('/dgga /boxr unpause')
+    -- mq.cmd('/dgga /timed 15 /boxr unpause')
+
+    -- Consider using a plugin unload / reload here to reset all of eh settings we used for the mission
 end
 
 Action_OpenChest = function()
@@ -679,3 +762,5 @@ Action_OpenChest = function()
     mq.delay(250)
     mq.cmd('/open')
 end
+
+-- #endregion

@@ -23,7 +23,7 @@ local request_npc = 'Black Jay'
 local request_phrase = 'smaller'
 local zonein_phrase = 'ready'
 local quest_zone = 'arcstoneruins_mission'
-local delay_before_zoning = 27000  -- 27s
+local delay_before_zoning = 35000  -- 27s
 local section = 0
 
 local CampY = -813
@@ -50,6 +50,13 @@ if (Settings.general.GroupMessage ~= 'dannet' and Settings.general.GroupMessage 
 end
 
 Logger.info('\awAutomation: \ay%s', Settings.general.Automation)
+--if (Settings.general.Automation ~= 'CWTN' and Settings.general.Automation ~= 'rgmercs' and Settings.general.Automation ~= 'KA')  then
+if (Settings.general.Automation ~= 'CWTN')  then
+--    Logger.info("Unknown or invalid automation system. Must be either 'CWTN', 'rgmercs', or 'KA'. Ending script. \ar")
+    Logger.info("Unknown or invalid automation system. Must be 'CWTN' currently, until I add the other automation systems'. Ending script. \ar")
+    os.exit()
+end
+
 Logger.info('\awPreManaCheck: \ay%s', Settings.general.PreManaCheck)
 Logger.info('\awBurn: \ay%s', Settings.general.Burn)
 Logger.info('\awOpen Chest: \ay%s', Settings.general.OpenChest)
@@ -66,7 +73,6 @@ if my_class ~= 'WAR' and my_class ~= 'SHD' and my_class ~= 'PAL' then
 	Logger.info('You must run the script on a tank class...')
 	os.exit()
 end
-mq.cmdf('/%s pause on', my_class)
 
 if mq.TLO.Me.Combat() == true then 
     Logger.info('You started the script while you are in Combat.  Please kill the mobs first, then restart the script. Exiting script...')
@@ -128,17 +134,10 @@ Logger.info('Starting the event in 10 seconds!')
 
 mq.delay(10000)
 
--- mq.cmd('/squelch /nav locyx -240 50 log=off')
--- WaitForNav()
-
 Logger.info('Starting the event...')
 MoveToAndSay('Torm the Golden', 'now')
 
--- mq.cmdf('/%s gotocamp', my_class)
--- -- mq.cmd('/squelch /nav locyx -240 50 log=off')
--- WaitForNav()
-
--- This section was waiting till all the starting adds were killed to do the rest of the script
+-- This section is waiting till all the 2 starting adds are killed to do the rest of the script
 Logger.info('Killing the 2 initial mobs...')
 while mq.TLO.SpawnCount("a stony worker npc")() + mq.TLO.SpawnCount("a runic worker npc")()  > 0 do
     if (mq.TLO.SpawnCount('a stony worker npc')() > 0) then
@@ -178,7 +177,8 @@ local event_stonefall = function(line)
 end
 
 mq.event('Zoned','LOADING, PLEASE WAIT...#*#',event_zoned)
-mq.event('Failed','#*#summons overwhelming enemies and your mission fails.#*#',event_failed)
+--TODO: Need the correct wording for a mission fail
+mq.event('Failed','#*#enemy, left undisturbed#*#',event_failed)
 mq.event('StoneFall', '#*#The Colossus tosses a large stone into the air and it hovers heavily#*#', event_stonefall)
 
 -- Setting burn mode for the big named
@@ -206,6 +206,7 @@ while true do
         Logger.debug('Colossus Attack branch...')
         MoveToTargetAndAttack('Colossus')
         if modeSet ~= true then 
+            Logger.info('Killing the Colossus now...')
             if (Settings.general.Burn == true) then 
                 Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
                 Logger.debug('Setting BurnAlways on')
@@ -224,6 +225,7 @@ while true do
         end
     end
 			
+    --ToDo: See if we actually need this section for slower kills
     if section > 0 then 
         if section == 1 then 
             CampY = -809
@@ -249,12 +251,6 @@ while true do
 	    end
     end
 
-	-- if math.abs(mq.TLO.Me.Y() + 286) > 15 or math.abs(mq.TLO.Me.X() + 282) > 15 then
-	-- 	if math.random(1000) > 800 then
-	-- 		mq.cmd('/squelch /nav locyx -286 -282 log=off')
-    --         WaitForNav()
-	-- 	end
-	-- end
 	mq.delay(1000)
     ZoneCheck(quest_zone)
     TaskCheck(Task_Name)
