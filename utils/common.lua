@@ -38,7 +38,7 @@ local function file_exists(name)
 end
 
 
---- Reload CWTN plugins for all non-mercenary group members
+-- Reload CWTN plugins for all non-mercenary group members
 --- Skips mercenaries automatically
 local function ReloadGroupCWTNPlugins()
     local groupSize = mq.TLO.Me.GroupSize() or 0
@@ -707,17 +707,17 @@ DoPrep = function()
         mq.cmd('/cwtna pause off')
         mq.cmdf('/%s checkprioritytarget off nosave', my_class)
         mq.cmdf('/%s resetcamp', my_class)
-        mq.cmdf('/cwtna AutoAssistAt 99')
+        mq.cmdf('/cwtna AutoAssistAt 99 nosave')
         
         Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
         Logger.debug('Setting BurnAlways off for main named')
         mq.cmd('/cwtna burnalways off nosave')         
     elseif Settings.general.Automation == 'rgmercs' then 
         --TODO: Finish Automation Setup
-        mq.cmd('/dge /squelch /boxr Chase')
+        mq.cmd('/dgge /squelch /boxr Chase')
     elseif Settings.general.Automation == 'KA' then 
         --TODO: Finish Automation Setup
-        mq.cmd('/dge /squelch /boxr Chase')
+        mq.cmd('/dgge /squelch /boxr Chase')
         mq.cmd('/dgga /boxr unpause')
     else
         print('Unknown Automation method!  I am not sure how you got this far with this entry, but we need to stop the script now!')
@@ -730,11 +730,6 @@ end
 ClearStartingSetup = function()
     mq.delay(2000)
     if Settings.general.Automation == 'CWTN' then 
-        mq.cmdf('/%s mode %s nosave', my_class, cwtn_StartingMode)
-        mq.cmdf('/%s pause off', my_class)
-        mq.cmdf('/%s checkprioritytarget on nosave', my_class)
-        mq.cmd('/cwtna pause off')
-
         Logger.info('Resetting all group CWTN plugins to reset all settings to base...Waiting 5 seconds')
         mq.delay(5000)
         ReloadGroupCWTNPlugins()
@@ -757,8 +752,12 @@ end
 Action_OpenChest = function()
     mq.cmd('/squelch /nav spawn _chest | log=off')
     mq.delay(250)
-    while mq.TLO.Nav.Active() do mq.delay(5) end
-    mq.cmd('/eqtarget _chest')
+    WaitForNav()
+    mq.cmd('/target _chest')
+    mq.delay(250)
+    mq.cmd('/open')
+    mq.delay(250)
+    mq.cmd('/target _chest')
     mq.delay(250)
     mq.cmd('/open')
 end

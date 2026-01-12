@@ -41,11 +41,11 @@ Settings = {
     }
 }
 -- #endregion
-
+Load_settings()
 
 Logger.info('\awGroup Chat: \ay%s', Settings.general.GroupMessage)
-if (Settings.general.GroupMessage ~= 'dannet' and Settings.general.GroupMessage ~= 'bc')  then
-   Logger.info("Unknown or invalid group command. Must be either 'dannet' or 'bc'. Ending script. \ar")
+if (Settings.general.GroupMessage ~= 'dannet')  then
+   Logger.info("Unknown or invalid group command. Must be 'dannet'. Ending script. \ar")
    os.exit()
 end
 
@@ -243,7 +243,7 @@ while true do
 
         if math.abs(mq.TLO.Me.Y() - CampY) > 60 or math.abs(mq.TLO.Me.X() - CampX) > 60 then
             if math.random(1000) > 500 then
-                mq.cmdf('/dgza /nav locyx %s %s log=off', CampY, CampX)
+                mq.cmdf('/dgga /nav locyx %s %s log=off', CampY, CampX)
                 WaitForNav()
                 if mq.TLO.Target() then  mq.cmd('/squelch /face') end
                 mq.delay(1000)
