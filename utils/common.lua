@@ -42,7 +42,8 @@ end
 --- Skips mercenaries automatically
 local function ReloadGroupCWTNPlugins()
     local groupSize = mq.TLO.Me.GroupSize() or 0
-
+    local grouperRunning = mq.TLO.Lua.Script('grouper').Status() == 'RUNNING'
+    
     -- 0 = self, 1..GroupSize = other members
     for i = 0, groupSize do
         local member = mq.TLO.Group.Member(i)
@@ -61,6 +62,7 @@ local function ReloadGroupCWTNPlugins()
                         mq.cmdf('/timed 50 /plugin %s unload', pluginName) 
                         mq.cmdf('/timed 100 /plugin %s load', pluginName) 
                         Logger.info('Local Plugin reset on %s (%s) %s', name, classShort, pluginName)
+                        if grouperRunning == true then mq.cmd('/timed 200 /lua run grouper') end
                     else
                         mq.cmdf('/dex %s /plugin %s unload', name, pluginName)
                         mq.cmdf('/dex %s /timed 10 /plugin %s', name, pluginName)
@@ -102,6 +104,10 @@ Load_settings=function ()
         end
         if (Settings.general.Burn == nil) then
             Settings.general.Burn = true
+            is_dirty = true
+        end
+        if (Settings.general.IgnoreStoneFall == nil) then
+            Settings.general.IgnoreStoneFall = false
             is_dirty = true
         end
 		if (Settings.general.OpenChest == nil) then
@@ -710,7 +716,7 @@ DoPrep = function()
         mq.cmdf('/cwtna AutoAssistAt 99 nosave')
         
         Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
-        Logger.debug('Setting BurnAlways off for main named')
+        Logger.debug('Setting BurnAlways off until the Colossus')
         mq.cmd('/cwtna burnalways off nosave')         
     elseif Settings.general.Automation == 'rgmercs' then 
         --TODO: Finish Automation Setup

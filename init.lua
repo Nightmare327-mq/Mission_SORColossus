@@ -35,8 +35,9 @@ Settings = {
         GroupMessage = 'dannet',        -- or "bc" - not yet implemented
         Automation = 'CWTN',            -- automation method, 'CWTN' for the CWTN plugins, or 'rgmercs' for the rgmercs lua automation.  KissAssist is not really supported currently, though it might work
         PreManaCheck = false,           -- true to pause until the check for everyone's mana, endurance, hp is full before proceeding, false if it stalls at that point
-        Burn = true,                    -- Whether we should burn by default. Some people have a bit of trouble handling the adds when the yburn, so you are able to turn this off if you want
+        Burn = true,                    -- Whether we should burn by default. Some people have a bit of trouble handling the adds when they burn, so you are able to turn this off if you want
         OpenChest = false,              -- true if you want to open the chest automatically at the end of the mission run. I normally do not do this as you can swap toon's out before opening the chest to get the achievements
+        IgnoreStoneFall = false,        -- true to ignore the calls for the stone's falling from the skies
         WriteCharacterIni = true,       -- Write/read character specific ini file to be able to run different groups with different parameters.  This must be changed in this section of code to take effect
     }
 }
@@ -59,6 +60,7 @@ end
 
 Logger.info('\awPreManaCheck: \ay%s', Settings.general.PreManaCheck)
 Logger.info('\awBurn: \ay%s', Settings.general.Burn)
+Logger.info('\awIgnoreStoneFall: \ay%s', Settings.general.IgnoreStoneFall)
 Logger.info('\awOpen Chest: \ay%s', Settings.general.OpenChest)
 Logger.info('\awWrite Character Ini: \ay%s\aw.', Settings.general.WriteCharacterIni)
 if (Settings.general.WriteCharacterIni == true) then
@@ -163,23 +165,31 @@ local event_failed = function(line)
 end
 
 local event_stonefall = function(line)
-    if section == 0 then 
-        section = 1
-    elseif section == 1 then 
-        section = 2
-    elseif section == 2 then
-        section = 3
-    elseif section == 3 then
-        section = 4
-    elseif section == 4 then 
-        section = 1
-    end
+    if Settings.general.IgnoreStoneFall == false then 
+        if section == 0 then 
+            section = 1
+        elseif section == 1 then 
+            section = 2
+        elseif section == 2 then
+            section = 3
+        elseif section == 3 then
+            section = 4
+        elseif section == 4 then 
+            section = 1
+        end
+        Logger.info('Stonefall event... Section %s', section)
+    else
+        Logger.info('Ignoring Stonefall event... Section %s', section)
+    end    
+    
 end
 
 mq.event('Zoned','LOADING, PLEASE WAIT...#*#',event_zoned)
 --TODO: Need the correct wording for a mission fail
 mq.event('Failed','#*#enemy, left undisturbed#*#',event_failed)
-mq.event('StoneFall', '#*#The Colossus tosses a large stone into the air and it hovers heavily#*#', event_stonefall)
+mq.event('StoneFall', '#*#you hear cracking and groaning as stones begin to fall from the sky#*#', event_stonefall)
+mq.event('StoneFall2', '#*#The Colossus tosses a large stone into the air and it hovers heavily#*#', event_stonefall)
+
 
 -- Setting burn mode for the big named
 if (Settings.general.Burn == true) then 
@@ -202,7 +212,8 @@ while true do
 		break
 	end
 
-    if (mq.TLO.SpawnCount('Colossus npc xtarhater')() > 0 ) then 
+    -- TODO: renove xtarhater once I get a loc I want to fight the Colossus at
+    if (mq.TLO.SpawnCount('Colossus npc')() > 0 ) then 
         Logger.debug('Colossus Attack branch...')
         MoveToTargetAndAttack('Colossus')
         if modeSet ~= true then 
@@ -213,7 +224,7 @@ while true do
                 if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnalways on nosave') end
                 mq.cmd('/boxr burnnow')
             end
-            
+            section = 1
             modeSet = true
         end
 	end
@@ -228,11 +239,12 @@ while true do
     --ToDo: See if we actually need this section for slower kills
     if section > 0 then 
         if section == 1 then 
+            -- Center of the area
+            CampY = -579
+            CampX = 1724
+        elseif section == 2 then
             CampY = -809
             CampX = 1683
-        elseif section == 2 then
-            CampY = -660
-            CampX = 1769
         elseif section == 3 then 
             CampY = -706
             CampX = 1883
@@ -242,12 +254,14 @@ while true do
         end
 
         if math.abs(mq.TLO.Me.Y() - CampY) > 60 or math.abs(mq.TLO.Me.X() - CampX) > 60 then
-            if math.random(1000) > 500 then
-                mq.cmdf('/dgga /nav locyx %s %s log=off', CampY, CampX)
-                WaitForNav()
-                if mq.TLO.Target() then  mq.cmd('/squelch /face') end
-                mq.delay(1000)
-            end
+            -- if math.random(1000) > 500 then
+            -- Do we need to stop attacking?
+            mq.cmdf('/dgga /nav locyx %s %s log=off', CampY, CampX)
+            WaitForNav()
+            if mq.TLO.Target() then  mq.cmd('/squelch /face') end
+            -- Wait a bit to let the Colossus follow you to the camp spot
+            mq.delay(5000)
+            -- end
 	    end
     end
 
