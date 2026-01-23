@@ -621,6 +621,23 @@ WaitForTask = function(delay_before_zoning)
     end  
 end
 
+WaitForDZ = function(waitTimeOut)
+    Logger.info('Waiting for Dynamic Zone to be created...')
+    local loopCounter = 0
+
+    while not mq.TLO.DynamicZone.Leader() and loopCounter < waitTimeOut do
+        mq.delay(1000)
+        Logger.debug('LoopCounter: %s', loopCounter)
+        loopCounter = loopCounter + 1
+    end
+
+    if mq.TLO.DynamicZone.Leader() then  
+        Logger.info('Dynamic Zone ready. Leader: %s', mq.TLO.DynamicZone.Leader.Name())
+        mq.delay(10000)
+    end
+
+    return mq.TLO.DynamicZone.Leader()
+end
 --- Gets the name of a group member, even if they are out of zone
 ---@param index integer
 ---@return string|nil

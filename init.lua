@@ -93,11 +93,15 @@ end
 
 if Zone_name == request_zone then 
 	if mq.TLO.Spawn(request_npc).Distance() > 40 then 
-		Logger.info('You are in %s, but too far away from %s to start the mission! You will have to manually run to the mission npc', request_zone, request_npc)
+		Logger.info('You are in %s, but too far away from %s to start the mission! You will have to manually run to the mission npc', mq.TLO.Zone.ShortName(), request_npc)
         os.exit()
     end
     local task = Task(Task_Name, request_zone, request_npc, request_phrase)
-    WaitForTask(delay_before_zoning)
+    local waitForDZ = WaitForDZ(60)
+    if waitForDZ == false then
+        Logger.info('Error getting the task and Zone initiated... Please fix the issue and try again... Exiting script...')
+        os.exit()
+    end
     ZoneIn(request_npc, zonein_phrase, quest_zone)
     mq.delay(5000)
     local allinzone = WaitForGroupToZone(600)
@@ -155,6 +159,7 @@ while mq.TLO.SpawnCount("a stony worker npc")() + mq.TLO.SpawnCount("a runic wor
 end
 
 mq.cmd('/dgga /nav loc -685 1760 1775 log=off')
+WaitForNav()
 section = 0
 
 local event_zoned = function(line)
@@ -188,18 +193,9 @@ local event_stonefall = function(line)
 end
 
 mq.event('Zoned','LOADING, PLEASE WAIT...#*#',event_zoned)
---TODO: Need the correct wording for a mission fail
 mq.event('Failed','#*#Colossus of Skylance has been left to its own devices for too long#*#',event_failed)
 mq.event('StoneFall', '#*#you hear cracking and groaning as stones begin to fall from the sky#*#', event_stonefall)
 mq.event('StoneFall2', '#*#The Colossus tosses a large stone into the air and it hovers heavily#*#', event_stonefall)
-
-
--- Setting burn mode for the big named
-if (Settings.general.Burn == true) then 
-    Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
-    Logger.debug('Setting BurnAlways on')
-    if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnalways on nosave') end
-end
 
 local modeSet = false
 
@@ -215,7 +211,6 @@ while true do
 		break
 	end
 
-    -- TODO: renove xtarhater once I get a loc I want to fight the Colossus at
     if (mq.TLO.SpawnCount('Colossus npc xtarhater')() > 0 ) then 
         Logger.debug('Colossus Attack branch...')
         MoveToTargetAndAttack('Colossus')
@@ -224,7 +219,7 @@ while true do
             if (Settings.general.Burn == true) then 
                 Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
                 Logger.debug('Setting BurnAlways on')
-                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnalways on nosave') end
+                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnnow') end
                 mq.cmd('/boxr burnnow')
             end
             section = 1
