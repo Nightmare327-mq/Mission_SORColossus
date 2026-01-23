@@ -702,17 +702,17 @@ end
 DoPrep = function()
     mq.cmd('/dgga /makemevis')
     if Settings.general.Automation == 'CWTN' then 
-        cwtn_StartingMode = mq.TLO.CWTN.Mode()
-        Logger.debug('CWTN Starting Mode: %s', cwtn_StartingMode)
+        -- cwtn_StartingMode = mq.TLO.CWTN.Mode()
+        -- Logger.debug('CWTN Starting Mode: %s', cwtn_StartingMode)
         mq.cmd('/cwtn mode manual nosave')
         mq.delay(100)
         mq.cmd('/cwtn mode chase nosave')
         mq.cmdf('/%s mode sictank nosave', my_class)
         -- these next 2 lines are probably superfluous, but it makes me feel better
         mq.cmdf('/%s pause off', my_class)
-        mq.cmd('/cwtna pause off')
+        mq.cmd('/cwtna pause off nosave')
         mq.cmdf('/%s checkprioritytarget off nosave', my_class)
-        mq.cmdf('/%s resetcamp', my_class)
+        mq.cmdf('/%s resetcamp nosave', my_class)
         mq.cmdf('/cwtna AutoAssistAt 99 nosave')
         
         Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)

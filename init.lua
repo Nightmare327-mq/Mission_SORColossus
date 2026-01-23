@@ -128,7 +128,7 @@ while Settings.general.PreManaCheck == true and Ready == false do
     TaskCheck(Task_Name)
 end
 
-Logger.info('Doing some setup...')
+Logger.info('Doing initial setup...')
 
 DoPrep()
 
@@ -153,6 +153,9 @@ while mq.TLO.SpawnCount("a stony worker npc")() + mq.TLO.SpawnCount("a runic wor
     ZoneCheck(quest_zone)
     TaskCheck(Task_Name)
 end
+
+mq.cmd('/dgga /nav loc -685 1760 1775 log=off')
+section = 0
 
 local event_zoned = function(line)
     -- zoned so quit
@@ -186,7 +189,7 @@ end
 
 mq.event('Zoned','LOADING, PLEASE WAIT...#*#',event_zoned)
 --TODO: Need the correct wording for a mission fail
-mq.event('Failed','#*#enemy, left undisturbed#*#',event_failed)
+mq.event('Failed','#*#Colossus of Skylance has been left to its own devices for too long#*#',event_failed)
 mq.event('StoneFall', '#*#you hear cracking and groaning as stones begin to fall from the sky#*#', event_stonefall)
 mq.event('StoneFall2', '#*#The Colossus tosses a large stone into the air and it hovers heavily#*#', event_stonefall)
 
@@ -213,7 +216,7 @@ while true do
 	end
 
     -- TODO: renove xtarhater once I get a loc I want to fight the Colossus at
-    if (mq.TLO.SpawnCount('Colossus npc')() > 0 ) then 
+    if (mq.TLO.SpawnCount('Colossus npc xtarhater')() > 0 ) then 
         Logger.debug('Colossus Attack branch...')
         MoveToTargetAndAttack('Colossus')
         if modeSet ~= true then 
@@ -253,7 +256,8 @@ while true do
             CampX = 1798
         end
 
-        if math.abs(mq.TLO.Me.Y() - CampY) > 60 or math.abs(mq.TLO.Me.X() - CampX) > 60 then
+        if Get_dist_to(CampY, CampX, 1765) > 60 then 
+        -- if math.abs(mq.TLO.Me.Y() - CampY) > 60 or math.abs(mq.TLO.Me.X() - CampX) > 60 then
             -- if math.random(1000) > 500 then
             -- Do we need to stop attacking?
             mq.cmdf('/dgga /nav locyx %s %s log=off', CampY, CampX)
