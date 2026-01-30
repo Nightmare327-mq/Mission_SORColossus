@@ -235,7 +235,8 @@ while true do
     end
 			
     --ToDo: See if we actually need this section for slower kills
-    if section > 0 then 
+    
+    if section > 0 and Settings.general.IgnoreStoneFall == false then 
         if section == 1 then 
             -- Center of the area
             CampY = -579
@@ -273,5 +274,11 @@ if (Settings.general.OpenChest == true) then Action_OpenChest() end
 
 mq.unevent('Zoned')
 mq.unevent('Failed')
+
+while mq.TLO.Me.Combat() == true do
+    Logger.info('Mission has ended, but you are still in combat.... Delaying reset until combat has ended...')
+    mq.delay(5000)
+end
+
 ClearStartingSetup()
 Logger.info('...Ended')
