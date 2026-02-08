@@ -219,7 +219,7 @@ while true do
             if (Settings.general.Burn == true) then 
                 Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
                 Logger.debug('Setting BurnAlways on')
-                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnnow') end
+                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnnow nosave') end
                 mq.cmd('/boxr burnnow')
             end
             section = 1

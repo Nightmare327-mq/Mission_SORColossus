@@ -4,7 +4,6 @@ local mq = require('mq')
 local config_path = ''
 local my_class = mq.TLO.Me.Class.ShortName()
 local my_name = mq.TLO.Me.CleanName()
-local cwtn_StartingMode = ''
 
 local task = mq.TLO.Task(Task_Name)
 
@@ -726,7 +725,7 @@ DoPrep = function()
         mq.cmd('/cwtn mode chase nosave')
         mq.cmdf('/%s mode sictank nosave', my_class)
         -- these next 2 lines are probably superfluous, but it makes me feel better
-        mq.cmdf('/%s pause off', my_class)
+        mq.cmdf('/%s pause off nosave', my_class)
         mq.cmd('/cwtna pause off nosave')
         mq.cmdf('/%s checkprioritytarget off nosave', my_class)
         mq.cmdf('/%s resetcamp nosave', my_class)
