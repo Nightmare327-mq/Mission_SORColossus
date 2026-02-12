@@ -47,7 +47,7 @@ Load_settings()
 Logger.info('\awGroup Chat: \ay%s', Settings.general.GroupMessage)
 if (Settings.general.GroupMessage ~= 'dannet')  then
    Logger.info("Unknown or invalid group command. Must be 'dannet'. Ending script. \ar")
-   os.exit()
+   mq.exit()
 end
 
 Logger.info('\awAutomation: \ay%s', Settings.general.Automation)
@@ -55,7 +55,7 @@ Logger.info('\awAutomation: \ay%s', Settings.general.Automation)
 if (Settings.general.Automation ~= 'CWTN')  then
 --    Logger.info("Unknown or invalid automation system. Must be either 'CWTN', 'rgmercs', or 'KA'. Ending script. \ar")
     Logger.info("Unknown or invalid automation system. Must be 'CWTN' currently, until I add the other automation systems'. Ending script. \ar")
-    os.exit()
+    mq.exit()
 end
 
 Logger.info('\awPreManaCheck: \ay%s', Settings.general.PreManaCheck)
@@ -68,46 +68,46 @@ if (Settings.general.WriteCharacterIni == true) then
 elseif (Settings.general.WriteCharacterIni == false) then
 else
     Logger.info("\awWrite Character Ini: %s \ar Invalid value. You can only use true or false.  Exiting script until you fix the issue.\ar", Settings.general.WriteCharacterIni)
-    os.exit()
+    mq.exit()
 end
 
 if my_class ~= 'WAR' and my_class ~= 'SHD' and my_class ~= 'PAL' then 
 	Logger.info('You must run the script on a tank class...')
-	os.exit()
+	mq.exit()
 end
 
 if mq.TLO.Me.Combat() == true then 
     Logger.info('You started the script while you are in Combat.  Please kill the mobs first, then restart the script. Exiting script...')
-	os.exit()
+	mq.exit()
 end
 
 if mq.TLO.Group.AnyoneMissing() then
     Logger.info('You started the script, but not everyone is actually in zone with you. Exiting script...')
-    os.exit()
+    mq.exit()
 end
 
 if CheckGroupDistance(50) ~= true then 
     Logger.info('You started the script, but not everyone is within 50 feet of you. Exiting script...')
-    os.exit()
+    mq.exit()
 end
 
 if Zone_name == request_zone then 
 	if mq.TLO.Spawn(request_npc).Distance() > 40 then 
 		Logger.info('You are in %s, but too far away from %s to start the mission! You will have to manually run to the mission npc', mq.TLO.Zone.ShortName(), request_npc)
-        os.exit()
+        mq.exit()
     end
     local task = Task(Task_Name, request_zone, request_npc, request_phrase)
     local waitForDZ = WaitForDZ(60)
     if waitForDZ == false then
         Logger.info('Error getting the task and Zone initiated... Please fix the issue and try again... Exiting script...')
-        os.exit()
+        mq.exit()
     end
     ZoneIn(request_npc, zonein_phrase, quest_zone)
     mq.delay(5000)
     local allinzone = WaitForGroupToZone(600)
     if allinzone == false then
         Logger.info('Timeout while waiting for everyone to zone in.  Please check what is happening and restart the script')
-        os.exit()
+        mq.exit()
     end
 end
 
@@ -115,12 +115,12 @@ Zone_name = mq.TLO.Zone.ShortName()
 
 if Zone_name ~= quest_zone then 
 	Logger.info('You are not in the mission...')
-	os.exit()
+	mq.exit()
 end
 
 if mq.TLO.Group.AnyoneMissing() then
     Logger.info('You started the script in the mission zone, but not everyone is actually in zone.  Exiting script...')
-    os.exit()
+    mq.exit()
 end
 -- Check group mana / endurance / hp
 while Settings.general.PreManaCheck == true and Ready == false do 
@@ -219,7 +219,7 @@ while true do
             if (Settings.general.Burn == true) then 
                 Logger.debug('Settings.general.Burn = %s', Settings.general.Burn)
                 Logger.debug('Setting BurnAlways on')
-                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnnow nosave') end
+                if (Settings.general.Automation == 'CWTN') then mq.cmd('/cwtna burnnow') end
                 mq.cmd('/boxr burnnow')
             end
             section = 1
@@ -227,13 +227,6 @@ while true do
         end
 	end
 
-    if mq.TLO.Target() ~= nil then 
-        if mq.TLO.Target.Distance() > 20 then
-            mq.cmd('/squelch /nav target distance=20 log=off') 
-            WaitForNav()
-        end
-    end
-			
     --ToDo: See if we actually need this section for slower kills
     
     if section > 0 and Settings.general.IgnoreStoneFall == false then 

@@ -233,8 +233,7 @@ Query = function(peer, query, timeout)
 end
 
 Tell = function(delay,gm,aa) 
-    local z = mq.cmdf('/timed %s /dex %s /multiline ; /stopcast; /timed 1 /alt act %s', delay, mq.TLO.Group.Member(gm).Name(), aa)
-    return z
+    mq.cmdf('/timed %s /dex %s /multiline ; /stopcast; /timed 1 /alt act %s', delay, mq.TLO.Group.Member(gm).Name(), aa)
 end
 
 ClassShortName = function(x)
@@ -425,7 +424,7 @@ GroupInvis = function(mode)
     if mode == nil then mode = 3 end
     if mode ~= 1 and mode ~= 2 and mode ~= 3 then 
         Logger.info('You called the Invis routine with an incorrect parameter (%s). You must call it with a 1, 2, or 3', mode)
-        os.exit()
+        mq.exit()
     end
     while not All_Invis(mode) do
         The_Invis_Thing(mode)
@@ -545,7 +544,7 @@ ZoneIn = function(npcName, zoneInPhrase, quest_zone)
         counter = counter + 1
         if counter >= 12 then 
             Logger.info('Not able to zone into the %s. Look at the issue and fix it please.', quest_zone)
-            os.exit()
+            mq.exit()
         end
         mq.delay(5000)
     end
@@ -569,7 +568,7 @@ Task = function(task_name, request_zone, request_npc, request_phrase)
     if (task() == nil) then
         if (mq.TLO.Zone.ShortName() ~= request_zone) then
             Logger.info('Not In %s to request task.  Move group to that zone and restart.', request_zone)
-            os.exit()
+            mq.exit()
         end
         if Settings.general.Automation == 'CWTN' then 
             mq.cmd('/cwtna pause on nosave')
@@ -588,14 +587,14 @@ Task = function(task_name, request_zone, request_npc, request_phrase)
 
             if (index >= 5) then
                 Logger.info('Unable to get quest. Exiting.')
-                os.exit()
+                mq.exit()
             end
             Logger.info('...waiting for quest.')
         end
 
         if (task() == nil) then
             Logger.info('Unable to get quest. Exiting.')
-            os.exit()
+            mq.exit()
         end
 
         Logger.info('\at Got quest... Closing Quest window in a few seconds...')
@@ -605,7 +604,7 @@ Task = function(task_name, request_zone, request_npc, request_phrase)
 
     if (task() == nil) then
         Logger.info('Problem requesting or getting task.  Exiting.')
-        os.exit()
+        mq.exit()
     end
     return task
 end
@@ -673,7 +672,7 @@ TaskCheck = function(task_name)
     if (task_check() == nil) then 
         Logger.info('You no longer have the mission task.  Ending the script...')
         ClearStartingSetup()
-        os.exit()
+        mq.exit()
     end
 end
 
@@ -711,7 +710,7 @@ ZoneCheck = function(quest_zone)
     if mq.TLO.Zone.ShortName() ~= quest_zone then 
         Logger.info('You are no longer in the mission zone.  Ending the script...')
         ClearStartingSetup()
-        os.exit()
+        mq.exit()
     end
 end
 
@@ -744,7 +743,7 @@ DoPrep = function()
     else
         print('Unknown Automation method!  I am not sure how you got this far with this entry, but we need to stop the script now!')
         printf('Current Automation method in the ini: %s', Settings.general.Automation)
-        os.exit()
+        mq.exit()
     end
     mq.cmd('/dgga /makemevis')
 end
@@ -762,7 +761,7 @@ ClearStartingSetup = function()
     else
         print('Unknown Automation method!  I am not sure how you got this far with this entry, but we need to stop the script now!')
         printf('Current Automation method in the ini: %s', Settings.general.Automation)
-        os.exit()        
+        mq.exit()        
     end
     mq.delay(5000)
     -- mq.cmd('/dgga /boxr unpause')
